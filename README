@@ -1,0 +1,68 @@
+Bontas Carol 331CA
+
+Tema satisface conditiile cerintei:
+    - 4 fire in nodul master care citesc paralel din fisier cate un paragraf
+    - 5 noduri (1 master 4 workeri)
+    - p fire de executie in fiecare worker din care unul interactioneaza cu nodul master si p-1 care proceseaza
+
+Tema ,insa, prezinta ceva probleme in algoritmul de procesare a paragrafelor horror si deci nu poate fi testata automat.
+
+In main.cpp se gaseste codul sursa in timp ce in My_barrier.cpp se gaseste o implementare adaptata a unei bariere in c++ folosind wait/notify
+ce este folosita in sincronizarea firelor nodului master
+
+Pseudocod:
+
+Firele nodului master ruleaza in functia process ce primeste ca parametrii id-ul firului si numele fisierului de intrare
+
+ process()
+ {
+     - fiecare fir creaza ifstreamul sau
+     while(pozitie_in_fisier!=EOF)
+     {
+         lacat_citire.lock()
+         -daca nu este pt prima data cand se face citirea ne pozitionam in ifstream folosind pozitie_in_fisier
+         -citeste caracter cu caracter si pune intr-un buffer paragraful
+         -actualizeaza pozitie_in_fisier (pozitite_in_fisier este o variabila globala)
+         -folosind o variabila globala care se incrementeaza de fiecare data cand e citit un paragraf aflam al catalea parafraf am citi (variabila next_para)
+         lacat_citire.unlock()
+
+         -folosim un vector de lacate in care lacatul de pe pozitita x va lasa un singur fir sa faca MPI_Send si MPI_Recv la un moment dat cu nodul de rang x
+
+         lacat_send_recv[destinatie].lock()
+         -trimitem un mesaj ce contine doar un nr intreg ce arata dimensiunea paragrafului
+         -trimitem intreg paragraful
+         -primim noua dimensiune a paragrafului
+         -primim noul paragraf
+         lacat.send_recv[destinatie].unlock()
+
+         lacat_scriere.lock()
+         -pune intr-o coada de prioritati noul paragraf impreuna cu numarul ce reprezinta la catalea este din fisierul de intrare
+         -coada ordoneaza in ordine crescatoare paragrafele in functie de ordinea lor din fisierul de intrare
+         -va scoate din coada paragraful cu numarul de ordine asteptat (folosim o variabila globala current_para)
+         De ex: in coada avem paragrafele 2,3,4 si este pus paragraful 1
+         - firul respectiv nu va scrie nimic deoarece current_para=0 adica paragraful 0 inca nu a ajuns inapoi
+         - daca ,insa, avem paragraful asteptat il scoatem din coada il scriem si incrementam current_para
+         - putem repeta aceaste operatii cu acelasi fir pana cand paragraful ce trebuie scos nu este cel asteptat sau coada este globala
+         lacat_scriere.unlock()
+
+     }
+
+     -firele ies din while deoarece am ajuns la finalul fisierului de intrare
+     -folosim o bariere de tip My_barrier pentru a astepta toate cele 4 fire
+     -trimitem un mesaj cu un numar intreg egal cu 0 ce semnaleaza workerii ca trebuie sa iasa din bucla infinita
+
+ }
+
+ Workerii:
+    while(1)
+    {
+        -primesc un numar intreg ce semnaleaza marimea paragrafului 
+        -daca e 0 ies din bucla
+        -daca nu, primesc si paragraful
+        -creez firele
+        -impartim paragraful pe linii si fiecare linie e pusa intr-un vector de linii
+        -ficare paragraf lucreaza pe partea lui de vector (algoritmul folosit la lab 2)
+        -la sfarsit se concateneaza toate liniile
+        - se trimite noua marime a paragrafului
+        -se trimite noul paragraf
+    }
