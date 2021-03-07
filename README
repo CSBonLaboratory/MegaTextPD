@@ -5,7 +5,6 @@ Tema satisface conditiile cerintei:
     - 5 noduri (1 master 4 workeri)
     - p fire de executie in fiecare worker din care unul interactioneaza cu nodul master si p-1 care proceseaza
 
-Tema ,insa, prezinta ceva probleme in algoritmul de procesare a paragrafelor horror si deci nu poate fi testata automat.
 
 In main.cpp se gaseste codul sursa in timp ce in My_barrier.cpp se gaseste o implementare adaptata a unei bariere in c++ folosind wait/notify
 ce este folosita in sincronizarea firelor nodului master
